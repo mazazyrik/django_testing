@@ -45,6 +45,15 @@ def news():
 
 
 @pytest.fixture
+def comment(news, author):
+    return Comment.objects.create(
+        text='test',
+        news=news,
+        author=author
+    )
+
+
+@pytest.fixture
 def comment_date(author, news):
     now = timezone.now()
     for i in range(3):
@@ -61,3 +70,13 @@ def comment_date(author, news):
 def author_client(client, author):
     client.force_login(author)
     return client
+
+
+@pytest.fixture
+def news_id(news):
+    return news.pk,
+
+
+@pytest.fixture
+def comment_id(comment):
+    return comment.pk,
