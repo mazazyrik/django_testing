@@ -1,6 +1,6 @@
 import pytest
-from django.urls import reverse
 from django.conf import settings
+from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
 

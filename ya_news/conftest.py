@@ -1,9 +1,11 @@
-import pytest
-from news.models import News, Comment
-from django.conf import settings
 from datetime import datetime, timedelta
+
+import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+
+from news.models import Comment, News
 
 User = get_user_model()
 
@@ -80,3 +82,8 @@ def news_id(news):
 @pytest.fixture
 def comment_id(comment):
     return comment.pk,
+
+
+@pytest.fixture
+def form_date():
+    return {'text': 'ТЕКСТ'}
