@@ -10,22 +10,6 @@ pytestmark = pytest.mark.django_db
 @pytest.mark.parametrize(
     'name, args',
     (
-        ('news:home', None),
-        ('news:detail', pytest.lazy_fixture('news_id')),
-        ('users:signup', None),
-        ('users:login', None),
-        ('users:logout', None)
-    )
-)
-def test_pages_for_anonym(client, name, args):
-    url = reverse(name, args=args)
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
-
-
-@pytest.mark.parametrize(
-    'name, args',
-    (
         ('news:edit', pytest.lazy_fixture('comment_id')),
         ('news:delete', pytest.lazy_fixture('comment_id'))
     )
@@ -38,25 +22,28 @@ def test_comment_edit_delete_redirect(client, name, args):
 
 
 @pytest.mark.parametrize(
-    'custom_client, status',
+    'reverse_url, parametrized_client, status',
     (
-        (pytest.lazy_fixture('author_client'), HTTPStatus.OK),
-        (pytest.lazy_fixture('admin_client'), HTTPStatus.NOT_FOUND)
+        (pytest.lazy_fixture('url_edit'), pytest.lazy_fixture(
+            'author_client'), HTTPStatus.OK),
+        (pytest.lazy_fixture('url_edit'), pytest.lazy_fixture(
+            'admin_client'), HTTPStatus.NOT_FOUND),
+        (pytest.lazy_fixture('url_delete'), pytest.lazy_fixture(
+            'author_client'), HTTPStatus.OK),
+        (pytest.lazy_fixture('url_delete'), pytest.lazy_fixture(
+            'admin_client'), HTTPStatus.NOT_FOUND),
+        (pytest.lazy_fixture('url_home'),
+         pytest.lazy_fixture('client'), HTTPStatus.OK),
+        (pytest.lazy_fixture('url_detail'),
+         pytest.lazy_fixture('client'), HTTPStatus.OK),
+        (reverse('users:signup'), pytest.lazy_fixture('client'),
+         HTTPStatus.OK),
+        (reverse('users:login'), pytest.lazy_fixture('client'), HTTPStatus.OK),
+        (reverse('users:logout'), pytest.lazy_fixture('client'), HTTPStatus.OK)
     )
 )
-@pytest.mark.parametrize(
-    'name, args',
-    (
-        ('news:edit', pytest.lazy_fixture('comment_id')),
-        ('news:delete', pytest.lazy_fixture('comment_id'))
-    )
-)
-def test_edit_delete_for_different_roles_users(
-    custom_client,
-    status,
-    name,
-    args
+def test_avalible_for_anonym_and_edit_delete(
+        reverse_url, parametrized_client, status
 ):
-    url = reverse(name, args=args)
-    response = custom_client.get(url)
+    response = parametrized_client.get(reverse_url)
     assert response.status_code == status

@@ -4,19 +4,16 @@ import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.urls import reverse
+from django.test import Client
+
 
 from news.models import Comment, News
 
 User = get_user_model()
-
-
-@pytest.fixture
-def news_count():
-    ten_news = []
-    for i in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1):
-        news = News(title=f'Новость № {i}', text='ТЕКСТ')
-        ten_news.append(news)
-    News.objects.bulk_create(ten_news)
+HOME_URL = 'news:home'
+DETAIL_URL = 'news:detail'
+client = Client()
 
 
 @pytest.fixture
@@ -69,7 +66,7 @@ def comment_date(author, news):
 
 
 @pytest.fixture
-def author_client(client, author):
+def author_client(author):
     client.force_login(author)
     return client
 
@@ -85,5 +82,20 @@ def comment_id(comment):
 
 
 @pytest.fixture
-def form_date():
-    return {'text': 'ТЕКСТ'}
+def url_detail(news_id):
+    return reverse(DETAIL_URL, args=news_id)
+
+
+@pytest.fixture
+def url_home():
+    return reverse(HOME_URL)
+
+
+@pytest.fixture
+def url_delete(comment_id):
+    return reverse('news:delete', args=comment_id)
+
+
+@pytest.fixture
+def url_edit(comment_id):
+    return reverse('news:edit', args=comment_id)
