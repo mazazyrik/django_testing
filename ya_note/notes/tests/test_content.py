@@ -1,61 +1,57 @@
-# test_content.py
-import pytest
+from django.contrib.auth.models import User
+from django.test import TestCase
 from django.urls import reverse
 
-
-@pytest.mark.parametrize(
-    # Задаём названия для параметров:
-    'parametrized_client, note_in_list',
-    (
-        # Передаём фикстуры в параметры при помощи "ленивых фикстур":
-        (pytest.lazy_fixture('author_client'), True),
-        (pytest.lazy_fixture('admin_client'), False),
-    )
-)
-def test_notes_list_for_different_users(
-        # Используем фикстуру заметки и параметры из декоратора:
-        note, parametrized_client, note_in_list
-):
-    url = reverse('notes:list')
-    # Выполняем запрос от имени параметризованного клиента:
-    response = parametrized_client.get(url)
-    object_list = response.context['object_list']
-    # Проверяем истинность утверждения "заметка есть в списке":
-    assert (note in object_list) is note_in_list
+from notes.models import Note
 
 
-def test_create_note_page_contains_form(author_client):
-    url = reverse('notes:add')
-    # Запрашиваем страницу создания заметки:
-    response = author_client.get(url)
-    # Проверяем, есть ли объект form в словаре контекста:
-    assert 'form' in response.context
+class TestContent(TestCase):
 
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_1 = User.objects.create(
+            username='user_1'
+        )
+        cls.user_2 = User.objects.create(
+            username='user_2'
+        )
+        cls.note_1 = Note.objects.create(
+            title='title',
+            text='text',
+            slug='slug',
+            author=cls.user_1
+        )
+        cls.note_2 = Note.objects.create(
+            title='title 2',
+            text='text 2',
+            slug='slug_2',
+            author=cls.user_2
+        )
 
-# В параметры теста передаём фикстуру slug_for_args и клиент с автором заметки:
-def test_edit_note_page_contains_form(slug_for_args, author_client):
-    url = reverse('notes:edit', args=slug_for_args)
-    # Запрашиваем страницу редактирования заметки:
-    response = author_client.get(url)
-    # Проверяем, есть ли объект form в словаре контекста:
-    assert 'form' in response.context
+    def test_edit_add_contains_form(self):
+        reverses = (
+            ('notes:edit', {'slug': self.note_1.slug}),
+            ('notes:add', None)
+        )
+        for reverse_url, args in reverses:
+            self.client.force_login(self.user_1)
+            with self.subTest(reverse_url=reverse_url, args=args):
+                url = reverse(reverse_url, args=args)
+                response = self.client.get(url)
+                self.assertIn('form', response.context)
 
+    def test_notes_list_for_user_1(self):
+        url = reverse('notes:list')
+        self.client.force_login(self.user_1)
+        response = self.client.get(url)
+        object_list = response.context['object_list']
+        self.assertIn(self.note_1, object_list)
+        self.assertNotIn(self.note_2, object_list)
 
-@pytest.mark.parametrize(
-    # В качестве параметров передаем name и args для reverse.
-    'name, args',
-    (
-        # Для тестирования страницы создания заметки
-        # никакие дополнительные аргументы для reverse() не нужны.
-        ('notes:add', None),
-        # Для тестирования страницы редактирования заметки нужен slug заметки.
-        ('notes:edit', pytest.lazy_fixture('slug_for_args'))
-    )
-)
-def test_pages_contains_form(author_client, name, args):
-    # Формируем URL.
-    url = reverse(name, args=args)
-    # Запрашиваем нужную страницу:
-    response = author_client.get(url)
-    # Проверяем, есть ли объект формы в словаре контекста:
-    assert 'form' in response.context
+    def test_notes_list_for_user_2(self):
+        url = reverse('notes:list')
+        self.client.force_login(self.user_2)
+        response = self.client.get(url)
+        object_list = response.context['object_list']
+        self.assertIn(self.note_2, object_list)
+        self.assertNotIn(self.note_1, object_list)
