@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 
 from notes.models import Note
@@ -29,6 +29,10 @@ class TestRoutes(TestCase):
             slug='1',
             author=cls.author
         )
+        cls.author_client = Client()
+        cls.user_client = Client()
+        cls.author_client.force_login(cls.author)
+        cls.user_client.force_login(cls.user)
 
     def test_pages(self):
         urls = (NOTES_HOME,
@@ -47,46 +51,35 @@ class TestRoutes(TestCase):
             (NOTES_SUCCESS),
             (NOTES_ADD),
         )
-        self.client.force_login(self.author)
         for reverse_url in urls:
             with self.subTest(reverse_url=reverse_url):
                 url = reverse(reverse_url)
-                response = self.client.get(url)
+                response = self.author_client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_detail_edit_delete_for_author(self):
-        users_statuses = (
-            (self.author, HTTPStatus.OK),
-        )
         urls = (
             (NOTES_DETAIL),
             (NOTES_EDIT),
             (NOTES_DELETE),
         )
-        for user, status in users_statuses:
-            self.client.force_login(user)
-            for reverse_urls in urls:
-                with self.subTest(user=user, reverse_urls=reverse_urls):
-                    url = reverse(reverse_urls, args=(self.notes.slug))
-                    response = self.client.get(url)
-                    self.assertEqual(response.status_code, status)
+        for reverse_urls in urls:
+            with self.subTest(user=self.author, reverse_urls=reverse_urls):
+                url = reverse(reverse_urls, args=(self.notes.slug))
+                response = self.author_client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_detail_edit_delete_for_user(self):
-        users_statuses = (
-            (self.user, HTTPStatus.NOT_FOUND),
-        )
         urls = (
             (NOTES_DETAIL),
             (NOTES_EDIT),
             (NOTES_DELETE),
         )
-        for user, status in users_statuses:
-            self.client.force_login(user)
-            for reverse_urls in urls:
-                with self.subTest(user=user, reverse_urls=reverse_urls):
-                    url = reverse(reverse_urls, args=(self.notes.slug))
-                    response = self.client.get(url)
-                    self.assertEqual(response.status_code, status)
+        for reverse_urls in urls:
+            with self.subTest(user=self.user, reverse_urls=reverse_urls):
+                url = reverse(reverse_urls, args=(self.notes.slug))
+                response = self.user_client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_redirect_for_anonymous(self):
         urls = (

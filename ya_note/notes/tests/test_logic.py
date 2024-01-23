@@ -38,7 +38,6 @@ class TestLogic(TestCase):
         }
         cls.user = User.objects.create(username='user')
         cls.author_client = Client()
-        cls.user_client = Client()
         cls.author_client.force_login(cls.author)
 
     def test_anonymous_user_cant_create_notes(self):
@@ -133,9 +132,10 @@ class TestLogicEditDelete(TestCase):
 
     def test_author_can_delete_note(self):
         url = reverse(NOTES_DELETE, args={'slug': self.note.slug})
+        notes_bef = Note.objects.count()
         response = self.author_client.post(url)
         self.assertRedirects(response, reverse(NOTES_SUCCESS))
-        self.assertEqual(Note.objects.count(), 0)
+        self.assertEqual(notes_bef - 1, Note.objects.count())
 
     def test_user_cant_delete_note(self):
         url = reverse(NOTES_EDIT, args={'slug': self.note.slug})
